@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="医療・リハビリテーションの専門用語と臨床会話で遊べる、寿司打スタイルの日本語タイピングゲーム。解剖・評価・疾患・治療手技・臨床会話の181問を収録。">
+<meta name="theme-color" content="#4a2e1c">
+<meta property="og:title" content="リハ打 - 医療・リハビリ タイピング">
+<meta property="og:description" content="流れてくるお皿を打ち切って元を取ろう。医療従事者・リハビリ職のための日本語タイピングゲーム。">
+<meta property="og:type" content="website">
+<title>リハ打 - 医療・リハビリ タイピング</title>
+<style>
+:root{
+  --wood:#5b3a24; --wood2:#7a4f31; --belt:#2b2f36; --belt2:#3a4048;
+  --cream:#fdf6e9; --ink:#2a2320; --accent:#e2574c; --gold:#f2b632;
+  --ok:#37b57a; --ng:#e2574c; --dim:#9a8f86;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
+  background:
+    radial-gradient(circle at 50% 0%, #8a5a38 0%, #4a2e1c 60%, #2a1a10 100%);
+  color:var(--cream); display:flex; align-items:center; justify-content:center;
+  padding:12px; overflow:hidden;
+}
+#app{width:min(980px,100%);}
+
+/* ---------- 共通パネル ---------- */
+.panel{
+  background:linear-gradient(180deg,#fffdf7,#f6ecd9);
+  color:var(--ink); border-radius:18px; padding:24px 26px;
+  box-shadow:0 18px 44px rgba(0,0,0,.5), inset 0 2px 0 #fff;
+}
+h1{font-size:30px;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+h1 small{font-size:13px;font-weight:400;color:#8a7a6c;letter-spacing:.15em}
+.sub{color:#7d6f63;font-size:13px;margin-top:6px;line-height:1.7}
+
+/* ---------- スタート画面 ---------- */
+.courses{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0 10px}
+.course{
+  border:2px solid #e2d6bf;border-radius:14px;padding:14px;cursor:pointer;
+  background:#fff;transition:.15s;text-align:center;
+}
+.course:hover{transform:translateY(-3px);border-color:var(--gold);box-shadow:0 8px 20px rgba(0,0,0,.12)}
+.course.sel{border-color:var(--accent);background:#fff5f3;box-shadow:0 0 0 3px rgba(226,87,76,.15)}
+.course .nm{font-weight:700;font-size:16px}
+.course .pr{font-size:26px;font-weight:800;color:var(--accent);margin:4px 0;font-variant-numeric:tabular-nums}
+.course .de{font-size:11.5px;color:#8a7a6c;line-height:1.6}
+.cats{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.cat{
+  border:2px solid #e2d6bf;border-radius:999px;padding:6px 14px;font-size:13px;
+  cursor:pointer;user-select:none;background:#fff;transition:.12s;
+}
+.cat.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.lbl{font-size:12px;font-weight:700;color:#8a7a6c;letter-spacing:.12em;margin-top:16px}
+.combotable{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.combotable div{background:#fff;border:2px solid #e2d6bf;border-radius:10px;padding:8px;text-align:center;font-size:12px}
+.combotable b{display:block;font-size:18px;color:var(--accent)}
+.combotable span{display:block;font-weight:700;color:#1e9e63;margin-top:2px}
+.btn{
+  display:block;width:100%;margin-top:20px;padding:16px;border:none;border-radius:14px;
+  background:linear-gradient(180deg,#ef6b5f,#d1443a);color:#fff;font-size:19px;font-weight:800;
+  letter-spacing:.15em;cursor:pointer;box-shadow:0 6px 0 #9e2f27;transition:.08s;
+}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #9e2f27}
+.btn.ghost{background:linear-gradient(180deg,#8d8377,#6c6259);box-shadow:0 6px 0 #4b433c}
+.btn.ghost:active{box-shadow:0 2px 0 #4b433c}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ---------- ゲーム画面 ---------- */
+#game{display:none}
+.hud{
+  display:flex;align-items:center;gap:14px;margin-bottom:10px;
+  background:rgba(0,0,0,.35);border-radius:14px;padding:10px 16px;backdrop-filter:blur(4px);
+}
+.hud .item{display:flex;flex-direction:column;line-height:1.2}
+.hud .k{font-size:10px;color:#c9b9a6;letter-spacing:.12em}
+.hud .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.hud .v.small{font-size:16px}
+.grow{flex:1}
+#timebar{height:8px;border-radius:99px;background:rgba(0,0,0,.4);overflow:hidden;margin-bottom:10px}
+#timefill{height:100%;width:100%;background:linear-gradient(90deg,#37b57a,#f2b632);transition:background .3s}
+
+/* コンベア */
+#belt{
+  position:relative;height:150px;border-radius:14px;overflow:hidden;
+  background:
+    linear-gradient(180deg,#1e2228 0%,#171a1f 46%,#0f1216 47%,#2f353d 48%,#454d58 62%,#2c3138 63%,#1a1d22 100%);
+  box-shadow:inset 0 0 40px rgba(0,0,0,.8);
+  border:3px solid #3b2617;
+}
+#belt::after{
+  content:"";position:absolute;left:0;right:0;top:47%;height:16%;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 18px,transparent 18px 40px);
+  animation:slide 1.1s linear infinite;
+}
+@keyframes slide{to{background-position:-40px 0}}
+.plate{
+  position:absolute;bottom:8px;width:132px;text-align:center;
+  transition:opacity .2s;
+}
+.plate .neta{font-size:38px;line-height:1;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
+.plate .dish{
+  height:16px;margin:-6px auto 0;width:104px;border-radius:0 0 50% 50%/0 0 100% 100%;
+  background:linear-gradient(180deg,#f4f1ea,#b9b2a6);box-shadow:0 6px 12px rgba(0,0,0,.5);
+  border-top:3px solid var(--pc,#e2574c);
+}
+.plate .yen{
+  margin-top:5px;font-size:12px;font-weight:800;color:#ffe9a8;
+  text-shadow:0 2px 4px #000;font-variant-numeric:tabular-nums;
+}
+.plate .wd{
+  font-size:11.5px;color:#fff;background:rgba(0,0,0,.5);border-radius:6px;
+  padding:2px 4px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.plate.head .wd{background:var(--accent);font-weight:700}
+.plate.eaten{animation:eat .45s ease-out forwards}
+@keyframes eat{to{transform:translateY(-120px) scale(.4) rotate(20deg);opacity:0}}
+.plate.gone{animation:drop .4s ease-in forwards}
+@keyframes drop{to{transform:translateY(80px) rotate(-25deg);opacity:0}}
+.pop{
+  position:absolute;font-weight:900;font-size:20px;pointer-events:none;
+  animation:pop .8s ease-out forwards;text-shadow:0 2px 6px #000;
+}
+@keyframes pop{to{transform:translateY(-60px);opacity:0}}
+
+/* 金皿 */
+.plate.gold .dish{background:linear-gradient(180deg,#ffe9a8,#c9982c);box-shadow:0 6px 18px rgba(242,182,50,.6)}
+.plate.gold .yen{color:#fff;background:linear-gradient(90deg,#f2b632,#e08b1a);border-radius:99px;padding:1px 6px}
+.plate.gold .neta{animation:shine 1s ease-in-out infinite alternate}
+@keyframes shine{to{filter:drop-shadow(0 0 12px #ffd964) drop-shadow(0 4px 6px rgba(0,0,0,.5))}}
+
+/* 皿ごとの持ち時間ゲージ */
+.plate .tbar{
+  width:96px;height:5px;margin:4px auto 0;border-radius:99px;
+  background:rgba(0,0,0,.55);overflow:hidden;
+}
+.plate .tbar i{display:block;height:100%;width:100%;background:#37b57a;border-radius:99px}
+.plate.hurry .neta{animation:hurry .28s ease-in-out infinite}
+@keyframes hurry{50%{transform:translateY(-5px) scale(1.08)}}
+
+/* 大将 */
+#taisho{
+  position:absolute;right:10px;top:8px;font-size:40px;z-index:3;
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.6));transition:transform .15s;
+}
+#taisho.react{transform:scale(1.35) rotate(-8deg)}
+/* 次の皿のプレビュー */
+#nextup{
+  position:absolute;left:10px;top:10px;z-index:3;font-size:12px;color:#e8ddcd;
+  background:rgba(0,0,0,.45);border-radius:99px;padding:4px 12px;letter-spacing:.05em;
+  max-width:55%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+#nextup b{font-size:15px}
+
+/* コンボ演出 */
+#flash{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;z-index:4;
+}
+#flash span{
+  font-size:44px;font-weight:900;letter-spacing:.04em;opacity:0;
+  color:#fff;text-shadow:0 0 18px #f2b632,0 4px 10px #000;
+}
+#flash span.go{animation:flashin .9s ease-out}
+@keyframes flashin{
+  0%{opacity:0;transform:scale(.4) rotate(-8deg)}
+  25%{opacity:1;transform:scale(1.15) rotate(2deg)}
+  70%{opacity:1;transform:scale(1)}
+  100%{opacity:0;transform:scale(1.3)}
+}
+#belt.hot{box-shadow:inset 0 0 40px rgba(0,0,0,.8),0 0 0 3px #f2b632,0 0 26px rgba(242,182,50,.7)}
+
+/* お金ゲージ */
+#moneybar{height:10px;border-radius:99px;background:rgba(0,0,0,.4);overflow:hidden;margin-bottom:10px;position:relative}
+#moneyfill{height:100%;width:0%;background:linear-gradient(90deg,#4a90d9,#37b57a);transition:width .25s}
+#moneybar.full #moneyfill{background:linear-gradient(90deg,#f2b632,#ffe9a8);box-shadow:0 0 14px #f2b632}
+#moneybar em{
+  position:absolute;right:8px;top:-1px;font-size:9px;font-style:normal;color:#e8ddcd;letter-spacing:.1em;
+}
+#hTime.urgent{animation:urg .5s infinite;color:#ff8a80}
+@keyframes urg{50%{transform:scale(1.18)}}
+
+/* ミュートボタン */
+.sndbtn{
+  border:none;background:rgba(0,0,0,.3);color:#fff;border-radius:10px;padding:6px 10px;
+  font-size:16px;cursor:pointer;line-height:1;
+}
+.sndbtn.off{opacity:.4}
+#sndTop{position:absolute;right:0;top:0;background:#efe6d4;color:var(--ink)}
+h1{position:relative}
+
+/* 打鍵エリア */
+#typing{
+  margin-top:12px;background:linear-gradient(180deg,#fffdf7,#f3e9d6);color:var(--ink);
+  border-radius:14px;padding:16px 20px;box-shadow:0 10px 26px rgba(0,0,0,.45);
+}
+#kana{font-size:14px;color:#a08d78;letter-spacing:.18em;min-height:20px}
+#jp{font-size:clamp(22px,3.6vw,36px);font-weight:800;letter-spacing:.04em;line-height:1.3;margin:2px 0 8px}
+#cat{display:inline-block;font-size:11px;background:var(--ink);color:#fff;border-radius:99px;padding:2px 10px;margin-bottom:6px;letter-spacing:.1em}
+#romaji{
+  font-family:"SF Mono",Menlo,Consolas,monospace;font-size:clamp(16px,2.4vw,24px);
+  letter-spacing:.06em;word-break:break-all;line-height:1.5;
+}
+#romaji .done{color:#c3b7a6}
+#romaji .next{background:var(--gold);border-radius:4px;padding:1px 2px;color:#3a2c14}
+#romaji .rest{color:var(--ink)}
+#typing.shake{animation:shake .18s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* ---------- リザルト ---------- */
+#result{display:none}
+.rank{
+  font-size:64px;font-weight:900;line-height:1;text-align:center;letter-spacing:.05em;
+  background:linear-gradient(180deg,#f7c65a,#d1902a);-webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.verdict{text-align:center;font-size:20px;font-weight:800;margin:6px 0 14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.stat{background:#fff;border:2px solid #eee2cc;border-radius:12px;padding:10px 12px}
+.stat .k{font-size:11px;color:#8a7a6c;letter-spacing:.08em}
+.stat .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat .v span{font-size:12px;font-weight:600;color:#8a7a6c}
+.misslist{margin-top:12px;font-size:13px;color:#7d6f63}
+.misslist b{display:inline-block;background:#ffe9e7;color:#c0392b;border-radius:6px;padding:2px 8px;margin:0 4px;font-family:monospace}
+.hint{margin-top:14px;font-size:12px;color:#8a7a6c;text-align:center;line-height:1.7}
+kbd{background:#efe6d4;border:1px solid #d9cbb2;border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:11px;font-family:monospace}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ================= スタート ================= -->
+<div id="start" class="panel">
+  <h1>🍣 リハ打 <small>REHA-DA / 医療・リハビリ タイピング</small>
+    <button class="sndbtn" id="sndTop" title="BGM・効果音のオン/オフ（Mキー）">🔊</button></h1>
+  <p class="sub">流れてくるお皿が左に落ちる前にローマ字で打ち切ろう。<br>
+  お題は解剖・評価・疾患・治療手技・臨床会話。制限時間内に<b>コース料金より多く食べれば「元が取れた」</b>。<br>
+  レーンは<b>時間とともに加速</b>。ミスタイプか皿の取りこぼしで連続正答は途切れます。</p>
+
+  <div class="lbl">連続正答ボーナス（1皿ごとに時間加算）</div>
+  <div class="combotable">
+    <div><b>3</b>皿連続<span>+0.3秒</span></div>
+    <div><b>6</b>皿連続<span>+0.5秒</span></div>
+    <div><b>10</b>皿連続<span>+0.8秒</span></div>
+    <div><b>15</b>皿連続<span>+1.0秒</span></div>
+  </div>
+  <p class="sub" style="margin-top:6px">※ 加算できる時間の上限は制限時間の30%（お手軽18秒／お勧め27秒／高級36秒）</p>
+
+  <div class="lbl">コースを選ぶ</div>
+  <div class="courses" id="courses"></div>
+
+  <div class="lbl">出題カテゴリ（複数選択可）</div>
+  <div class="cats" id="cats"></div>
+
+  <button class="btn" id="startBtn">スタート</button>
+  <p class="hint">かな入力ゆれ対応：<kbd>shi</kbd>/<kbd>si</kbd>、<kbd>tsu</kbd>/<kbd>tu</kbd>、<kbd>ja</kbd>/<kbd>zya</kbd>、「ん」は<kbd>n</kbd>/<kbd>nn</kbd> など。伸ばし棒「ー」は <kbd>-</kbd> キー。<br>
+  ✨金皿は2倍の値段（出現率12%）。<kbd>F2</kbd>または🔊ボタンでBGM切替、<kbd>Esc</kbd>で中断、<kbd>Enter</kbd>でスタート／リトライ。</p>
+</div>
+
+<!-- ================= ゲーム ================= -->
+<div id="game">
+  <div class="hud">
+    <div class="item"><div class="k">のこり時間</div><div class="v" id="hTime">60</div></div>
+    <div class="item"><div class="k">食べた金額</div><div class="v" id="hYen">0円</div></div>
+    <div class="item"><div class="k">コース料金</div><div class="v small" id="hFee">3,000円</div></div>
+    <div class="grow"></div>
+    <div class="item" id="comboBox"><div class="k">連続正答</div><div class="v" id="hCombo">0</div></div>
+    <div class="item"><div class="k">追加時間</div><div class="v small" id="hBonus">+0.0秒</div></div>
+    <div class="item"><div class="k">正確率</div><div class="v small" id="hAcc">100%</div></div>
+    <div class="item"><div class="k">ミス</div><div class="v small" id="hMiss">0</div></div>
+    <div class="item"><div class="k">落とした皿</div><div class="v small" id="hDrop">0</div></div>
+    <button class="sndbtn" id="sndGame" title="BGM・効果音のオン/オフ（Mキー）">🔊</button>
+  </div>
+  <div id="timebar"><div id="timefill"></div></div>
+  <div id="moneybar"><div id="moneyfill"></div><em id="moneyTxt">元を取るまで あと 3,000円</em></div>
+  <div id="belt">
+    <div id="taisho">👨‍🍳</div>
+    <div id="nextup"></div>
+    <div id="flash"><span></span></div>
+  </div>
+  <div id="typing">
+    <span id="cat"></span>
+    <div id="kana"></div>
+    <div id="jp"></div>
+    <div id="romaji"></div>
+  </div>
+</div>
+
+<!-- ================= リザルト ================= -->
+<div id="result" class="panel">
+  <div class="rank" id="rRank">A</div>
+  <div class="verdict" id="rVerdict"></div>
+  <div class="stats" id="rStats"></div>
+  <div class="misslist" id="rMiss"></div>
+  <div class="row2">
+    <button class="btn" id="againBtn">もう一度</button>
+    <button class="btn ghost" id="backBtn">コース選択へ</button>
+  </div>
+</div>
+
+</div>
+<script>
+/* =========================================================
+   1. ローマ字入力エンジン
+   ========================================================= */
+const MONO={
+ 'あ':['a'],'い':['i','yi'],'う':['u','wu'],'え':['e'],'お':['o'],
+ 'か':['ka','ca'],'き':['ki'],'く':['ku','cu','qu'],'け':['ke'],'こ':['ko','co'],
+ 'が':['ga'],'ぎ':['gi'],'ぐ':['gu'],'げ':['ge'],'ご':['go'],
+ 'さ':['sa'],'し':['shi','si','ci'],'す':['su'],'せ':['se','ce'],'そ':['so'],
+ 'ざ':['za'],'じ':['ji','zi'],'ず':['zu'],'ぜ':['ze'],'ぞ':['zo'],
+ 'た':['ta'],'ち':['chi','ti'],'つ':['tsu','tu'],'て':['te'],'と':['to'],
+ 'だ':['da'],'ぢ':['di'],'づ':['du'],'で':['de'],'ど':['do'],
+ 'な':['na'],'に':['ni'],'ぬ':['nu'],'ね':['ne'],'の':['no'],
+ 'は':['ha'],'ひ':['hi'],'ふ':['fu','hu'],'へ':['he'],'ほ':['ho'],
+ 'ば':['ba'],'び':['bi'],'ぶ':['bu'],'べ':['be'],'ぼ':['bo'],
+ 'ぱ':['pa'],'ぴ':['pi'],'ぷ':['pu'],'ぺ':['pe'],'ぽ':['po'],
+ 'ま':['ma'],'み':['mi'],'む':['mu'],'め':['me'],'も':['mo'],
+ 'や':['ya'],'ゆ':['yu'],'よ':['yo'],
+ 'ら':['ra'],'り':['ri'],'る':['ru'],'れ':['re'],'ろ':['ro'],
+ 'わ':['wa'],'ゐ':['wi'],'ゑ':['we'],'を':['wo'],
+ 'ゔ':['vu'],
+ 'ぁ':['xa','la'],'ぃ':['xi','li'],'ぅ':['xu','lu'],'ぇ':['xe','le'],'ぉ':['xo','lo'],
+ 'ゃ':['xya','lya'],'ゅ':['xyu','lyu'],'ょ':['xyo','lyo'],'ゎ':['xwa','lwa'],
+ 'ー':['-'],'、':[','],'。':['.'],'・':['/'],'？':['?'],'！':['!'],' ':[' ']
+};
+const DI={
+ 'きゃ':['kya'],'きぃ':['kyi'],'きゅ':['kyu'],'きぇ':['kye'],'きょ':['kyo'],
+ 'ぎゃ':['gya'],'ぎゅ':['gyu'],'ぎぇ':['gye'],'ぎょ':['gyo'],
+ 'しゃ':['sha','sya'],'しゅ':['shu','syu'],'しぇ':['she','sye'],'しょ':['sho','syo'],
+ 'じゃ':['ja','jya','zya'],'じゅ':['ju','jyu','zyu'],'じぇ':['je','jye','zye'],'じょ':['jo','jyo','zyo'],
+ 'ちゃ':['cha','tya','cya'],'ちゅ':['chu','tyu','cyu'],'ちぇ':['che','tye'],'ちょ':['cho','tyo','cyo'],
+ 'ぢゃ':['dya'],'ぢゅ':['dyu'],'ぢょ':['dyo'],
+ 'にゃ':['nya'],'にゅ':['nyu'],'にぇ':['nye'],'にょ':['nyo'],
+ 'ひゃ':['hya'],'ひゅ':['hyu'],'ひぇ':['hye'],'ひょ':['hyo'],
+ 'びゃ':['bya'],'びゅ':['byu'],'びょ':['byo'],
+ 'ぴゃ':['pya'],'ぴゅ':['pyu'],'ぴょ':['pyo'],
+ 'みゃ':['mya'],'みゅ':['myu'],'みょ':['myo'],
+ 'りゃ':['rya'],'りゅ':['ryu'],'りぇ':['rye'],'りょ':['ryo'],
+ 'ふぁ':['fa','fwa'],'ふぃ':['fi','fwi'],'ふぇ':['fe','fwe'],'ふぉ':['fo','fwo'],'ふゅ':['fyu'],
+ 'うぁ':['wha'],'うぃ':['wi','whi'],'うぇ':['we','whe'],'うぉ':['who'],
+ 'ゔぁ':['va'],'ゔぃ':['vi'],'ゔぇ':['ve'],'ゔぉ':['vo'],
+ 'てぃ':['thi'],'てゅ':['thu'],'でぃ':['dhi'],'でゅ':['dhu'],
+ 'とぅ':['twu'],'どぅ':['dwu'],'つぁ':['tsa'],'つぃ':['tsi'],'つぇ':['tse'],'つぉ':['tso'],
+ 'くぁ':['qa','kwa'],'くぃ':['qi'],'くぇ':['qe'],'くぉ':['qo'],
+ 'ぐぁ':['gwa'],'しぃ':['syi'],'じぃ':['jyi']
+};
+// カタカナ → ひらがな
+function toHira(s){
+  return s.replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));
+}
+// 位置 i から始まるチャンク候補
+function chunksAt(k,i){
+  const res=[], c1=k[i];
+  if(c1===undefined) return res;
+  if(c1==='っ'){
+    for(const s of chunksAt(k,i+1)){
+      const opts=[];
+      for(const r of s.opts){ const h=r[0]; if(!'aiueon-,.!?/ '.includes(h)) opts.push(h+r); }
+      if(opts.length) res.push({len:1+s.len,opts});
+    }
+    res.push({len:1,opts:['xtu','ltu','xtsu','ltsu']});
+    return res;
+  }
+  if(c1==='ん'){
+    const opts=['nn','xn'];
+    const nx=k[i+1];
+    // 語末と母音・な行・や行の前は「n」1つでは確定させない（IMEと同じ挙動）
+    if(nx && !'あいうえおなにぬねのやゆよんっ'.includes(nx)) opts.push('n');
+    return [{len:1,opts}];
+  }
+  const d=DI[c1+(k[i+1]||'')];
+  if(d) res.push({len:2,opts:d});
+  const m=MONO[c1];
+  if(m) res.push({len:1,opts:m});
+  return res;
+}
+// 正規（表示用）ローマ字：位置 i 以降
+function canonFrom(k,i){
+  let out='';
+  while(i<k.length){
+    const cs=chunksAt(k,i);
+    if(!cs.length){ i++; continue; }
+    cs.sort((a,b)=>b.len-a.len);
+    out+=cs[0].opts[0]; i+=cs[0].len;
+  }
+  return out;
+}
+class Matcher{
+  constructor(kana){
+    this.k=toHira(kana).replace(/[^぀-ゟー、。・？！ ]/g,'');
+    this.states=[{k:0,p:''}];
+    this.typed='';
+    this.canon=canonFrom(this.k,0);
+  }
+  get done(){ return this.states.some(s=>s.k>=this.k.length && s.p===''); }
+  // 1文字入力。true=正解 / false=ミス
+  feed(ch){
+    const seen=new Set(), ns=[];
+    const add=(k,p)=>{ const key=k+'|'+p; if(!seen.has(key)){seen.add(key);ns.push({k,p});} };
+    for(const st of this.states){
+      const np=st.p+ch;
+      for(const c of chunksAt(this.k,st.k)){
+        for(const r of c.opts){
+          if(r===np) add(st.k+c.len,'');
+          else if(r.startsWith(np)) add(st.k,np);
+        }
+      }
+    }
+    if(!ns.length) return false;
+    this.states=ns; this.typed+=ch; return true;
+  }
+  // 表示用 {done, next, rest}
+  view(){
+    let best=this.states[0];
+    for(const s of this.states) if(s.k>best.k || (s.k===best.k && s.p.length>best.p.length)) best=s;
+    let remain='';
+    if(best.p){
+      let hit='';
+      for(const c of chunksAt(this.k,best.k))
+        for(const r of c.opts)
+          if(r.startsWith(best.p)&&(!hit||r.length<hit.length)){ hit=r; remain=r.slice(best.p.length)+canonFrom(this.k,best.k+c.len); }
+    }else{
+      remain=canonFrom(this.k,best.k);
+    }
+    return {done:this.typed, next:remain.slice(0,1), rest:remain.slice(1)};
+  }
+}
+
+/* =========================================================
+   2. 語彙データ（医療・リハビリテーション）
+   ========================================================= */
+const WORDS={
+ "解剖・運動器":[
+  ["大腿骨","だいたいこつ"],["脛骨","けいこつ"],["腓骨","ひこつ"],["膝蓋骨","しつがいこつ"],
+  ["肩甲骨","けんこうこつ"],["鎖骨","さこつ"],["上腕骨","じょうわんこつ"],["橈骨","とうこつ"],
+  ["尺骨","しゃっこつ"],["距骨","きょこつ"],["踵骨","しょうこつ"],["寛骨臼","かんこつきゅう"],
+  ["頸椎","けいつい"],["胸椎","きょうつい"],["腰椎","ようつい"],["仙骨","せんこつ"],
+  ["椎間板","ついかんばん"],["骨盤帯","こつばんたい"],["肋骨","ろっこつ"],["恥骨結合","ちこつけつごう"],
+  ["大腿四頭筋","だいたいしとうきん"],["ハムストリングス","はむすとりんぐす"],["腓腹筋","ひふくきん"],
+  ["ヒラメ筋","ひらめきん"],["前脛骨筋","ぜんけいこつきん"],["中殿筋","ちゅうでんきん"],
+  ["大殿筋","だいでんきん"],["腸腰筋","ちょうようきん"],["脊柱起立筋","せきちゅうきりつきん"],
+  ["腹横筋","ふくおうきん"],["僧帽筋","そうぼうきん"],["三角筋","さんかくきん"],
+  ["広背筋","こうはいきん"],["大胸筋","だいきょうきん"],["棘上筋","きょくじょうきん"],
+  ["前鋸筋","ぜんきょきん"],["回旋筋腱板","かいせんきんけんばん"],["上腕二頭筋","じょうわんにとうきん"],
+  ["アキレス腱","あきれすけん"],["前十字靭帯","ぜんじゅうじじんたい"],["半月板","はんげつばん"],
+  ["坐骨神経","ざこつしんけい"],["正中神経","せいちゅうしんけい"],["尺骨神経","しゃっこつしんけい"],
+  ["総腓骨神経","そうひこつしんけい"],["腕神経叢","わんしんけいそう"],["横隔膜","おうかくまく"],
+  ["外側広筋","がいそくこうきん"],["内側広筋","ないそくこうきん"],["後脛骨筋","こうけいこつきん"]
+ ],
+ "評価・検査":[
+  ["関節可動域","かんせつかどういき"],["徒手筋力検査","としゅきんりょくけんさ"],
+  ["筋緊張","きんきんちょう"],["深部腱反射","しんぶけんはんしゃ"],["感覚検査","かんかくけんさ"],
+  ["握力測定","あくりょくそくてい"],["疼痛評価","とうつうひょうか"],["片脚立位","へんきゃくりつい"],
+  ["重心動揺検査","じゅうしんどうようけんさ"],["歩行速度","ほこうそくど"],["歩幅","ほはば"],
+  ["立ち上がりテスト","たちあがりてすと"],["日常生活動作","にちじょうせいかつどうさ"],
+  ["起居動作","ききょどうさ"],["姿勢制御","しせいせいぎょ"],["バランス評価","ばらんすひょうか"],
+  ["ファンクショナルリーチ","ふぁんくしょなるりーち"],["タイムドアップアンドゴー","たいむどあっぷあんどごー"],
+  ["バーセルインデックス","ばーせるいんでっくす"],["機能的自立度評価","きのうてきじりつどひょうか"],
+  ["改訂長谷川式","かいていはせがわしき"],["ミニメンタルステート検査","みにめんたるすてーとけんさ"],
+  ["ブルンストロームステージ","ぶるんすとろーむすてーじ"],["筋力低下","きんりょくていか"],
+  ["関節不安定性","かんせつふあんていせい"],["整形外科的テスト","せいけいげかてきてすと"],
+  ["視診と触診","ししんとしょくしん"],["バイタルサイン測定","ばいたるさいんそくてい"],
+  ["自覚的運動強度","じかくてきうんどうきょうど"],["最大酸素摂取量","さいだいさんそせっしゅりょう"],
+  ["6分間歩行試験","ろっぷんかんほこうしけん"],["転倒リスク評価","てんとうりすくひょうか"]
+ ],
+ "疾患・病態":[
+  ["脳梗塞","のうこうそく"],["脳出血","のうしゅっけつ"],["くも膜下出血","くもまくかしゅっけつ"],
+  ["片麻痺","かたまひ"],["失語症","しつごしょう"],["高次脳機能障害","こうじのうきのうしょうがい"],
+  ["パーキンソン病","ぱーきんそんびょう"],["脊髄小脳変性症","せきずいしょうのうへんせいしょう"],
+  ["筋萎縮性側索硬化症","きんいしゅくせいそくさくこうかしょう"],["多発性硬化症","たはつせいこうかしょう"],
+  ["脊髄損傷","せきずいそんしょう"],["頸髄症","けいずいしょう"],
+  ["変形性膝関節症","へんけいせいしつかんせつしょう"],["変形性股関節症","へんけいせいこかんせつしょう"],
+  ["腰部脊柱管狭窄症","ようぶせきちゅうかんきょうさくしょう"],["腰椎椎間板ヘルニア","ようついついかんばんへるにあ"],
+  ["大腿骨頸部骨折","だいたいこつけいぶこっせつ"],["橈骨遠位端骨折","とうこつえんいたんこっせつ"],
+  ["脊椎圧迫骨折","せきついあっぱくこっせつ"],["肩関節周囲炎","かたかんせつしゅういえん"],
+  ["腱板断裂","けんばんだんれつ"],["半月板損傷","はんげつばんそんしょう"],
+  ["関節リウマチ","かんせつりうまち"],["骨粗鬆症","こつそしょうしょう"],
+  ["サルコペニア","さるこぺにあ"],["フレイル","ふれいる"],["廃用症候群","はいようしょうこうぐん"],
+  ["誤嚥性肺炎","ごえんせいはいえん"],["慢性閉塞性肺疾患","まんせいへいそくせいはいしっかん"],
+  ["間質性肺炎","かんしつせいはいえん"],["慢性心不全","まんせいしんふぜん"],
+  ["虚血性心疾患","きょけつせいしんしっかん"],["糖尿病性神経障害","とうにょうびょうせいしんけいしょうがい"],
+  ["末梢動脈疾患","まっしょうどうみゃくしっかん"],["深部静脈血栓症","しんぶじょうみゃくけっせんしょう"],
+  ["褥瘡","じょくそう"],["拘縮","こうしゅく"],["痙縮","けいしゅく"],["起立性低血圧","きりつせいていけつあつ"]
+ ],
+ "治療・介入":[
+  ["関節可動域訓練","かんせつかどういきくんれん"],["ストレッチング","すとれっちんぐ"],
+  ["筋力増強訓練","きんりょくぞうきょうくんれん"],["持久力トレーニング","じきゅうりょくとれーにんぐ"],
+  ["歩行訓練","ほこうくんれん"],["平行棒内歩行","へいこうぼうないほこう"],
+  ["階段昇降訓練","かいだんしょうこうくんれん"],["移乗動作訓練","いじょうどうさくんれん"],
+  ["寝返り介助","ねがえりかいじょ"],["起き上がり動作","おきあがりどうさ"],
+  ["バランス練習","ばらんすれんしゅう"],["協調性運動","きょうちょうせいうんどう"],
+  ["物理療法","ぶつりりょうほう"],["温熱療法","おんねつりょうほう"],["寒冷療法","かんれいりょうほう"],
+  ["電気刺激療法","でんきしげきりょうほう"],["牽引療法","けんいんりょうほう"],
+  ["関節モビライゼーション","かんせつもびらいぜーしょん"],["軟部組織モビライゼーション","なんぶそしきもびらいぜーしょん"],
+  ["呼吸理学療法","こきゅうりがくりょうほう"],["排痰援助","はいたんえんじょ"],
+  ["口すぼめ呼吸","くちすぼめこきゅう"],["嚥下訓練","えんげくんれん"],
+  ["装具療法","そうぐりょうほう"],["短下肢装具","たんかしそうぐ"],["義足歩行","ぎそくほこう"],
+  ["車椅子駆動練習","くるまいすくどうれんしゅう"],["杖歩行指導","つえほこうしどう"],
+  ["ホームエクササイズ","ほーむえくささいず"],["生活指導","せいかつしどう"],
+  ["ポジショニング","ぽじしょにんぐ"],["リスク管理","りすくかんり"],
+  ["早期離床","そうきりしょう"],["心臓リハビリテーション","しんぞうりはびりてーしょん"],
+  ["作業療法","さぎょうりょうほう"],["言語聴覚療法","げんごちょうかくりょうほう"]
+ ],
+ "臨床の会話文":[
+  ["今日の体調はいかがですか","きょうのたいちょうはいかがですか"],
+  ["これからリハビリを始めます","これからりはびりをはじめます"],
+  ["痛みがあれば遠慮なく教えてください","いたみがあればえんりょなくおしえてください"],
+  ["ゆっくり立ち上がってみましょう","ゆっくりたちあがってみましょう"],
+  ["手すりをしっかり持ってください","てすりをしっかりもってください"],
+  ["膝をまっすぐ伸ばしましょう","ひざをまっすぐのばしましょう"],
+  ["深呼吸を三回してください","しんこきゅうをさんかいしてください"],
+  ["ふらつきに注意して歩きましょう","ふらつきにちゅういしてあるきましょう"],
+  ["車椅子のブレーキを確認します","くるまいすのぶれーきをかくにんします"],
+  ["転倒には十分注意してください","てんとうにはじゅうぶんちゅういしてください"],
+  ["血圧と脈拍を測定します","けつあつとみゃくはくをそくていします"],
+  ["無理のない範囲で動かしてください","むりのないはんいでうごかしてください"],
+  ["痺れは残っていませんか","しびれはのこっていませんか"],
+  ["今日は病棟まで歩いて戻ります","きょうはびょうとうまであるいてもどります"],
+  ["自主練習を毎日続けましょう","じしゅれんしゅうをまいにちつづけましょう"],
+  ["息が上がったら休憩しましょう","いきがあがったらきゅうけいしましょう"],
+  ["退院後の生活を一緒に考えます","たいいんごのせいかつをいっしょにかんがえます"],
+  ["ご家族に介助方法を説明します","ごかぞくにかいじょほうほうをせつめいします"],
+  ["訓練の目標を共有しましょう","くんれんのもくひょうをきょうゆうしましょう"],
+  ["座位のバランスが安定してきました","ざいのばらんすがあんていしてきました"],
+  ["装具の適合を確認しておきます","そうぐのてきごうをかくにんしておきます"],
+  ["食事の姿勢に気をつけてください","しょくじのしせいにきをつけてください"],
+  ["記録はカルテに入力しておきます","きろくはかるてににゅうりょくしておきます"],
+  ["主治医に相談してから進めます","しゅじいにそうだんしてからすすめます"]
+ ]
+};
+const NETA=['🍣','🍤','🍥','🍙','🍡','🥟','🍘','🍢','🦐','🐟','🍚','🥢'];
+const PCOL=['#e2574c','#f2b632','#37b57a','#4a90d9','#9b59b6','#111'];
+
+/* =========================================================
+   3. コース設定
+   ========================================================= */
+const COURSES=[
+ // kps=1皿に求められる打鍵速度（この速さで打てば間に合う）／grace=反応時間の猶予／ramp=終盤の厳しさ
+ {id:'easy', nm:'お手軽', fee:3000, time:60, kps:2.7, grace:0.7, ramp:0.30, de:'60秒 / 短めの単語中心<br>まずはここから'},
+ {id:'std',  nm:'お勧め', fee:4500, time:90, kps:3.2, grace:0.6, ramp:0.40, de:'90秒 / 標準<br>専門用語をバランスよく'},
+ {id:'hard', nm:'高級',   fee:6000, time:120,kps:3.7, grace:0.5, ramp:0.40, de:'120秒 / 長い用語＆臨床文<br>上級者向け'}
+];
+let course=COURSES[1];
+let selCats=Object.keys(WORDS).slice();
+
+const $=id=>document.getElementById(id);
+
+// スタート画面 描画
+$('courses').innerHTML=COURSES.map((c,i)=>
+ `<div class="course${i===1?' sel':''}" data-i="${i}">
+    <div class="nm">${c.nm}コース</div>
+    <div class="pr">${c.fee.toLocaleString()}<span style="font-size:14px">円</span></div>
+    <div class="de">${c.de}</div>
+  </div>`).join('');
+$('courses').onclick=e=>{
+  const el=e.target.closest('.course'); if(!el) return;
+  [...$('courses').children].forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel'); course=COURSES[+el.dataset.i];
+};
+$('cats').innerHTML=Object.keys(WORDS).map(k=>`<div class="cat on" data-k="${k}">${k}</div>`).join('');
+$('cats').onclick=e=>{
+  const el=e.target.closest('.cat'); if(!el) return;
+  el.classList.toggle('on');
+  const on=[...$('cats').querySelectorAll('.cat.on')].map(x=>x.dataset.k);
+  if(!on.length){ el.classList.add('on'); return; }
+  selCats=on;
+};
+
+/* =========================================================
+   4. ゲーム本体
+   ========================================================= */
+const BELT=$('belt');
+let G=null, raf=null;
+
+function pickPool(){
+  let pool=[];
+  for(const k of selCats) for(const w of WORDS[k]) pool.push({jp:w[0],kana:w[1],cat:k});
+  pool=pool.map(w=>({...w, rlen:canonFrom(toHira(w.kana),0).length}));
+  // コースごとに長さでふるい分け
+  const raw=pool;
+  if(course.id==='easy')      pool=pool.filter(w=>w.rlen<=14);
+  else if(course.id==='std')  pool=pool.filter(w=>w.rlen<=26);
+  else                        pool=pool.filter(w=>w.rlen>=11);
+  if(pool.length<8) pool=raw;
+  return pool;
+}
+function priceOf(rlen){ return Math.max(100, Math.round(rlen*15/10)*10); }
+
+/* ---- 一皿ずつ流す（寿司打スタイル）----
+   皿は右から左へ1枚ずつ。左端に着く＝その皿の制限時間切れで、次の皿に進む。 */
+function draw(){                              // 次のお題を1つ引く
+  const w=G.pool[Math.floor(Math.random()*G.pool.length)];
+  const gold=Math.random()<0.12;              // 金皿＝価格2倍
+  return {w,gold,price:priceOf(w.rlen)*(gold?2:1),neta:NETA[Math.floor(Math.random()*NETA.length)]};
+}
+// その皿に与える持ち時間（秒）。コースごとの要求打鍵速度から算出し、時間経過で短くなる
+function limitFor(rlen){
+  const prog=Math.min(1,G.elapsed/course.time);
+  const kps=course.kps*(1+course.ramp*prog);
+  return course.grace + rlen/kps;
+}
+function newPlate(){
+  const c=G.nextCard || draw();
+  G.nextCard=draw();
+  const el=document.createElement('div');
+  el.className='plate head'+(c.gold?' gold':'');
+  const pc=PCOL[Math.min(PCOL.length-1,Math.floor(c.w.rlen/6))];
+  el.style.setProperty('--pc',c.gold?'#f2b632':pc);
+  el.innerHTML=`<div class="neta">${c.gold?'✨':''}${c.neta}</div>
+    <div class="dish"></div><div class="yen">${c.price}円</div>
+    <div class="tbar"><i></i></div>
+    <div class="wd">${c.w.jp}</div>`;
+  BELT.appendChild(el);
+  G.plate={...c, el, t:0, limit:limitFor(c.w.rlen), x:BELT.clientWidth};
+  el.style.left=G.plate.x+'px';
+  $('nextup').innerHTML=`つぎ <b>${G.nextCard.neta}</b> ${esc(G.nextCard.w.jp)}`;
+  setTarget();
+}
+function clearPlate(cls,ms){
+  const p=G.plate; if(!p) return;
+  p.el.classList.add(cls); setTimeout(()=>p.el.remove(),ms);
+  G.plate=null; G.m=null; G.gap=0.22;          // 次の皿が出るまでの間
+}
+// 大将のリアクション
+function taisho(face,ms){
+  const t=$('taisho'); t.textContent=face;
+  t.classList.add('react'); setTimeout(()=>t.classList.remove('react'),160);
+  clearTimeout(G.tsTimer);
+  G.tsTimer=setTimeout(()=>{ $('taisho').textContent='👨‍🍳'; },ms||1100);
+}
+// コンボの大きな演出
+function flash(txt){
+  const s=$('flash').firstElementChild;
+  s.textContent=txt; s.classList.remove('go'); void s.offsetWidth; s.classList.add('go');
+}
+function setTarget(){
+  const p=G.plate;
+  if(!p){ G.m=null; $('jp').textContent=''; $('kana').textContent=''; $('romaji').textContent=''; return; }
+  G.m=new Matcher(p.w.kana);
+  $('cat').textContent=p.w.cat;
+  $('jp').textContent=p.w.jp;
+  $('kana').textContent=p.w.kana;
+  drawRomaji();
+}
+function drawRomaji(){
+  if(!G.m) return;
+  const v=G.m.view();
+  $('romaji').innerHTML=
+    `<span class="done">${esc(v.done)}</span><span class="next">${esc(v.next)||''}</span><span class="rest">${esc(v.rest)}</span>`;
+}
+const esc=s=>(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function popup(x,txt,col,dy){
+  const d=document.createElement('div');
+  d.className='pop'; d.style.left=x+'px'; d.style.bottom=(80+(dy||0))+'px'; d.style.color=col;
+  d.textContent=txt; BELT.appendChild(d); setTimeout(()=>d.remove(),820);
+}
+// 連続正答（コンボ）による時間ボーナス
+function comboBonus(c){
+  if(c>=15) return 1.0;
+  if(c>=10) return 0.8;
+  if(c>=6)  return 0.5;
+  if(c>=3)  return 0.3;
+  return 0;
+}
+const bonusCap=()=>course.time*0.30;   // 加算できる時間の上限
+function eatPlate(){
+  const p=G.plate;
+  clearPlate('eaten',470);
+  G.yen+=p.price; G.eaten++; if(p.gold) G.golds++;
+  G.combo++; if(G.combo>G.maxCombo) G.maxCombo=G.combo;
+  popup(p.x+30,'+'+p.price+'円',p.gold?'#ffe9a8':'#ffd964');
+  const bn=Math.min(comboBonus(G.combo), bonusCap()-G.bonus);
+  if(bn>0.001){
+    G.bonus+=bn;
+    popup(p.x+30,'⏱ +'+bn.toFixed(1)+'秒','#7ee2a8',30);
+    SFX.bonus();
+  }
+  if(p.gold){ SFX.gold(); flash('✨ 金皿 '+p.price+'円 ✨'); taisho('🤩'); }
+  else SFX.eat(G.combo);
+  // コンボの節目
+  if([5,10,15,20,30,40,50,75,100].includes(G.combo)){
+    flash(G.combo+' 連続！'); SFX.combo(G.combo); taisho('😆',1400);
+    BELT.classList.add('hot');
+  }
+  if(G.combo<5) BELT.classList.remove('hot');
+  updHUD();
+}
+function breakCombo(){
+  if(G.combo>=5){ flash('COMBO BREAK'); taisho('😱',1300); }
+  G.combo=0; BELT.classList.remove('hot'); updHUD();
+}
+function dropPlate(){
+  const p=G.plate;
+  G.drop++; popup(Math.max(4,p.x)+30,'✗ 時間切れ','#ff8a80'); SFX.drop();
+  clearPlate('gone',420);
+  taisho('😨');
+  breakCombo();
+  updHUD();
+}
+function updHUD(){
+  $('hYen').textContent=G.yen.toLocaleString()+'円';
+  $('hYen').style.color = G.yen>=course.fee ? '#7ee2a8' : '#fff';
+  $('hMiss').textContent=G.miss;
+  $('hDrop').textContent=G.drop;
+  $('hBonus').textContent='+'+G.bonus.toFixed(1)+'秒';
+  $('hBonus').style.color = G.bonus>=bonusCap()-0.01 ? '#f2b632' : '#fff';
+  $('hBonus').title='上限 +'+bonusCap().toFixed(0)+'秒';
+  const cb=$('hCombo'); cb.textContent=G.combo;
+  const nx=comboBonus(G.combo);
+  cb.style.color = G.combo>=15?'#ffd964' : G.combo>=6?'#7ee2a8' : G.combo>=3?'#fff' : '#c9b9a6';
+  $('comboBox').title = nx>0 ? `1皿ごとに +${nx.toFixed(1)}秒` : '3連続から時間ボーナス';
+  const tot=G.hit+G.miss;
+  $('hAcc').textContent=(tot?Math.round(G.hit/tot*100):100)+'%';
+  // お金ゲージ
+  const r=Math.min(1,G.yen/course.fee);
+  $('moneyfill').style.width=(r*100)+'%';
+  $('moneybar').classList.toggle('full',G.yen>=course.fee);
+  $('moneyTxt').textContent = G.yen>=course.fee
+    ? `元が取れた！ +${(G.yen-course.fee).toLocaleString()}円`
+    : `元を取るまで あと ${(course.fee-G.yen).toLocaleString()}円`;
+}
+
+/* ---------- サウンド（BGM＋効果音／すべて WebAudio 合成、外部ファイル不要） ---------- */
+let AC=null, MASTER=null, SFXG=null, BGMG=null, NOISE=null, sound=true;
+function audio(){
+  if(AC) return AC;
+  try{
+    AC=new (window.AudioContext||window.webkitAudioContext)();
+    MASTER=AC.createGain(); MASTER.gain.value=sound?1:0; MASTER.connect(AC.destination);
+    SFXG=AC.createGain(); SFXG.gain.value=.9; SFXG.connect(MASTER);
+    BGMG=AC.createGain(); BGMG.gain.value=.34; BGMG.connect(MASTER);
+    const len=AC.sampleRate*1, buf=AC.createBuffer(1,len,AC.sampleRate), ch=buf.getChannelData(0);
+    for(let i=0;i<len;i++) ch[i]=Math.random()*2-1;
+    NOISE=buf;
+  }catch(e){ AC=null; }
+  return AC;
+}
+// ブラウザが AudioContext を suspend したときに復帰させる
+function resumeAudio(){
+  if(AC && AC.state && AC.state!=='running'){
+    try{ AC.resume(); }catch(e){}
+    BGM.resync();
+  }
+}
+function tone(f,d,type,vol,dest,slideTo){
+  if(!audio()) return;
+  const t=AC.currentTime, o=AC.createOscillator(), g=AC.createGain();
+  o.type=type||'triangle'; o.frequency.setValueAtTime(f,t);
+  if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+d);
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(vol||.06,t+.008);
+  g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g); g.connect(dest||SFXG); o.start(t); o.stop(t+d+.02);
+}
+function noise(d,vol,hp,dest,at){
+  if(!audio()) return;
+  const t=(at||AC.currentTime), s=AC.createBufferSource(), g=AC.createGain(), f=AC.createBiquadFilter();
+  s.buffer=NOISE; f.type='highpass'; f.frequency.value=hp||3000;
+  g.gain.setValueAtTime(vol||.05,t); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  s.connect(f); f.connect(g); g.connect(dest||SFXG); s.start(t); s.stop(t+d);
+}
+const beep=(f,d)=>tone(f,d,'triangle',.06);
+// 効果音いろいろ
+const SFX={
+  key:()=>tone(1400+Math.random()*160,.025,'square',.018),
+  miss:()=>{ tone(180,.14,'sawtooth',.07,null,90); noise(.06,.03,900); },
+  eat:c=>{ const s=Math.min(c,14); tone(660*Math.pow(2,s/12),.09,'triangle',.09,null,990*Math.pow(2,s/12)); },
+  gold:()=>{ [0,80,160,240].forEach((ms,i)=>setTimeout(()=>tone([784,988,1175,1568][i],.16,'square',.07),ms)); },
+  drop:()=>{ tone(300,.3,'sawtooth',.09,null,70); noise(.18,.05,600); },
+  bonus:()=>{ [0,60].forEach((ms,i)=>setTimeout(()=>tone([1047,1568][i],.12,'sine',.09),ms)); },
+  combo:n=>{ [0,70,140,210].forEach((ms,i)=>setTimeout(()=>tone(523*Math.pow(2,(i*4+Math.min(n,20)/5)/12),.18,'square',.08),ms)); },
+  tick:()=>tone(1000,.05,'square',.07),
+  fanfare:win=>{
+    const seq = win ? [[523,0],[659,110],[784,220],[1047,330],[1319,470]]
+                    : [[523,0],[494,140],[440,280],[392,430]];
+    seq.forEach(([f,ms])=>setTimeout(()=>tone(f,.42,'triangle',.09),ms));
+  }
+};
+/* ---------- BGM：ペンタトニックの4小節ループ（テンポはレーン速度に追従） ---------- */
+const BGM={
+  on:false, step:0, next:0, timer:null, bpm:118, mul:1,
+  prog:[[45,[57,60,64,69]],[41,[53,57,60,65]],[36,[48,52,55,60]],[43,[55,59,62,67]]], // Am-F-C-G
+  mel:[0,4,2,7,4,9,7,4, 0,2,4,7,9,7,4,2],
+  hz:m=>440*Math.pow(2,(m-69)/12),
+  start(){
+    if(!audio()) return;
+    try{ if(AC.state!=='running') AC.resume(); }catch(e){}
+    this.on=true; this.step=0; this.next=AC.currentTime+.1;
+    clearInterval(this.timer);
+    this.timer=setInterval(()=>this.tick(),25);
+  },
+  stop(){ this.on=false; clearInterval(this.timer); this.timer=null; },
+  setSpeed(m){ this.mul=m; },
+  // 裏に回った／音声が止まったあと、現在時刻に合わせて再同期
+  resync(){ if(AC) this.next=AC.currentTime+0.05; },
+  tick(){
+    if(!this.on||!AC) return;
+    try{
+      if(AC.state && AC.state!=='running'){ AC.resume(); this.resync(); return; }
+      // スケジューラが遅れた場合（タブ非表示から復帰など）は過去の音をまとめて鳴らさず再同期
+      if(this.next < AC.currentTime-0.05) this.resync();
+      const spb=60/(this.bpm*this.mul)/4;               // 16分音符の秒数
+      let guard=0;
+      while(this.next < AC.currentTime+0.12 && guard++<64){
+        this.play(this.step,this.next,spb); this.next+=spb; this.step++;
+      }
+    }catch(e){ this.resync(); }
+  },
+  play(s,t,spb){
+    const st=s%16, bar=Math.floor(s/16)%4, [root,chord]=this.prog[bar];
+    const N=m=>this.hz(m);
+    const at=(f,d,type,v)=>{ const o=AC.createOscillator(),g=AC.createGain();
+      o.type=type; o.frequency.setValueAtTime(f,t);
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01);
+      g.gain.exponentialRampToValueAtTime(.0001,t+d);
+      o.connect(g); g.connect(BGMG); o.start(t); o.stop(t+d+.02); };
+    // ベース
+    if([0,3,6,8,11,14].includes(st)) at(N(root-12),spb*1.6,'triangle',.16);
+    // コード（裏拍のカッティング）
+    if([2,6,10,14].includes(st)) chord.forEach(m=>at(N(m),spb*1.1,'square',.028));
+    // メロディ
+    if(st%2===0) at(N(chord[0]+12+this.mel[Math.floor(s/2)%16]),spb*1.7,'square',.045);
+    // ドラム
+    if([0,8,11].includes(st)){ const o=AC.createOscillator(),g=AC.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(45,t+.11);
+      g.gain.setValueAtTime(.4,t); g.gain.exponentialRampToValueAtTime(.001,t+.13);
+      o.connect(g); g.connect(BGMG); o.start(t); o.stop(t+.15); }
+    if([4,12].includes(st)) noise(.11,.16,1600,BGMG,t);
+    if(st%2===0) noise(.03,.05,7000,BGMG,t);
+  }
+};
+function setSound(v){
+  sound=v;
+  if(MASTER&&AC) MASTER.gain.setTargetAtTime(v?1:0,AC.currentTime,.02);
+  document.querySelectorAll('.sndbtn').forEach(b=>{ b.textContent=v?'🔊':'🔇'; b.classList.toggle('off',!v); });
+}
+
+function startGame(){
+  $('start').style.display='none'; $('result').style.display='none';
+  $('game').style.display='block';
+  BELT.querySelectorAll('.plate,.pop').forEach(e=>e.remove());
+  BELT.classList.remove('hot');
+  $('taisho').textContent='👨‍🍳'; $('hTime').classList.remove('urgent');
+  G={pool:pickPool(),plate:null,nextCard:null,gap:0,m:null,yen:0,hit:0,miss:0,drop:0,eaten:0,golds:0,
+     combo:0,maxCombo:0,bonus:0,elapsed:0,tick:99,tsTimer:0,
+     t0:performance.now(),last:performance.now(),missKeys:{}};
+  BGM.setSpeed(1); BGM.start();
+  $('hFee').textContent=course.fee.toLocaleString()+'円';
+  newPlate(); updHUD();
+  raf=requestAnimationFrame(loop);
+}
+function loop(now){
+  const dt=Math.min(0.05,(now-G.last)/1000); G.last=now; // タブ復帰時の巨大dtで皿が一気に流れるのを防ぐ
+  G.elapsed+=dt;
+  const rest=course.time+G.bonus-G.elapsed;
+  if(rest<=0){ endGame(); return; }
+  $('hTime').textContent=Math.ceil(rest);
+  // ラスト5秒のカウントダウン
+  const sec=Math.ceil(rest);
+  $('hTime').classList.toggle('urgent',rest<=5);
+  if(sec!==G.tick){ if(rest<=5.001) SFX.tick(); G.tick=sec; }
+  const r=Math.min(1,rest/course.time);
+  $('timefill').style.width=(r*100)+'%';
+  $('timefill').style.background = r<.2? '#e2574c' : r<.5? 'linear-gradient(90deg,#f2b632,#e2574c)' : 'linear-gradient(90deg,#37b57a,#f2b632)';
+
+  // 時間経過とともに1皿あたりの持ち時間が短くなる
+  BGM.setSpeed(1 + course.ramp*Math.min(1,G.elapsed/course.time)*0.55);
+
+  const p=G.plate;
+  if(p){
+    p.t+=dt;
+    const k=Math.min(1,p.t/p.limit);
+    p.x = (BELT.clientWidth)*(1-k) - 140*k;         // 右端 → 左端へ
+    p.el.style.left=p.x+'px';
+    const bar=p.el.querySelector('.tbar i');
+    if(bar){ bar.style.width=((1-k)*100)+'%';
+             bar.style.background = k>.8?'#e2574c' : k>.55?'#f2b632' : '#37b57a'; }
+    p.el.classList.toggle('hurry',k>0.8);
+    if(k>=1) dropPlate();
+  }else{
+    G.gap-=dt;
+    if(G.gap<=0) newPlate();                        // 次の皿を流す
+  }
+  raf=requestAnimationFrame(loop);
+}
+const TITLES={SS:'ゴッドハンド',S:'スーパーバイザー',A:'ベテランセラピスト',B:'中堅セラピスト',C:'新人セラピスト',D:'実習生'};
+const BEST={};   // セッション中のベスト記録（コース別）
+function endGame(){
+  cancelAnimationFrame(raf); raf=null;
+  BGM.stop();
+  $('game').style.display='none'; $('result').style.display='block';
+  const tot=G.hit+G.miss;
+  const acc=tot?G.hit/tot:1;
+  const played=Math.max(1,G.elapsed);
+  const kps=G.hit/played;
+  const paid=course.fee, got=G.yen;
+  const ratio=got/paid;
+  const score=ratio*100*acc;
+  let rank='D';
+  if(score>=300) rank='SS'; else if(score>=220) rank='S'; else if(score>=160) rank='A';
+  else if(score>=115) rank='B'; else if(score>=80) rank='C';
+  $('rRank').textContent=rank;
+  const nb = !BEST[course.id] || got>BEST[course.id];
+  const prev = BEST[course.id]||0;
+  BEST[course.id]=Math.max(prev,got);
+  $('rVerdict').innerHTML = (got>=paid
+    ? `<span style="color:#1e9e63">🎉 元が取れました！ +${(got-paid).toLocaleString()}円</span>`
+    : `<span style="color:#c0392b">😢 元が取れませんでした… −${(paid-got).toLocaleString()}円</span>`)
+    + `<div style="font-size:14px;font-weight:700;color:#8a7a6c;margin-top:4px">称号：${TITLES[rank]}`
+    + (nb&&prev? ` ／ <span style="color:#d1902a">🏆 自己ベスト更新！(前回 ${prev.toLocaleString()}円)</span>`
+       : prev? ` ／ このコースのベスト ${BEST[course.id].toLocaleString()}円` : '')+`</div>`;
+  SFX.fanfare(got>=paid);
+  $('rStats').innerHTML=[
+   ['食べた金額', got.toLocaleString()+'<span>円</span>'],
+   ['コース料金', paid.toLocaleString()+'<span>円</span>'],
+   ['食べた皿', G.eaten+'<span>皿</span>'],
+   ['✨ 金皿', G.golds+'<span>皿</span>'],
+   ['落とした皿', G.drop+'<span>皿</span>'],
+   ['最大連続正答', G.maxCombo+'<span>皿</span>'],
+   ['獲得した追加時間', '+'+G.bonus.toFixed(1)+'<span>秒</span>'],
+   ['正確率', (acc*100).toFixed(1)+'<span>%</span>'],
+   ['平均キー数', kps.toFixed(1)+'<span>回/秒</span>'],
+   ['総打鍵数', (G.hit+G.miss)+'<span>打</span>'],
+   ['ミスタイプ', G.miss+'<span>回</span>']
+  ].map(s=>`<div class="stat"><div class="k">${s[0]}</div><div class="v">${s[1]}</div></div>`).join('');
+  const mk=Object.entries(G.missKeys).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  $('rMiss').innerHTML = mk.length
+    ? '苦手だったキー：'+mk.map(m=>`<b>${esc(m[0])}</b>×${m[1]}`).join('')
+    : 'ミスタイプはありませんでした。素晴らしい！';
+}
+
+/* --- 入力 --- */
+document.addEventListener('keydown',e=>{
+  resumeAudio();                       // ブラウザに止められた音声を復帰
+  // 音のオン/オフは F2（ゲーム中は「m」がタイピングに使われるため）
+  if(e.key==='F2'){ e.preventDefault(); audio(); setSound(!sound); return; }
+  if($('game').style.display!=='block') {
+    if(e.key==='m'||e.key==='M'){ audio(); setSound(!sound); return; }
+    if(e.key==='Enter'){
+      if($('start').style.display!=='none'){ e.preventDefault(); startGame(); }
+      else if($('result').style.display!=='none'){ e.preventDefault(); startGame(); }
+    }
+    return;
+  }
+  if(e.key==='Escape'){ endGame(); return; }
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(e.key.length!==1) return;
+  e.preventDefault();
+  const ch=e.key.toLowerCase();
+  if(!/[a-z0-9\-,.\/?! ]/.test(ch)) return;
+  if(!G.m) return;
+  if(G.m.feed(ch)){
+    G.hit++; drawRomaji(); SFX.key();
+    if(G.m.done) eatPlate();
+  }else{
+    G.miss++; G.missKeys[ch]=(G.missKeys[ch]||0)+1;
+    breakCombo(); taisho('😵',700);
+    $('typing').classList.remove('shake'); void $('typing').offsetWidth; $('typing').classList.add('shake');
+    SFX.miss();
+  }
+  updHUD();
+});
+$('startBtn').onclick=startGame;
+$('againBtn').onclick=startGame;
+$('backBtn').onclick=()=>{ $('result').style.display='none'; $('start').style.display='block'; };
+document.querySelectorAll('.sndbtn').forEach(b=>b.onclick=e=>{ e.stopPropagation(); audio(); resumeAudio(); setSound(!sound); });
+document.addEventListener('pointerdown',resumeAudio);
+// タブを離れている間はBGMを止め、戻ったら鳴らし直す（音が出なくなるのを防ぐ）
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){ BGM.stop(); }
+  else if(raf){ resumeAudio(); BGM.start(); }
+});
+// 保険：1秒ごとに音声が生きているか確認
+setInterval(()=>{
+  if(!raf) return;
+  resumeAudio();
+  if(!BGM.on) BGM.start();
+},1000);
+window.__REHA={Matcher,canonFrom,toHira,WORDS};
+</script>
+</body>
+</html>
