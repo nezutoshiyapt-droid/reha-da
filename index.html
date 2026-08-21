@@ -236,7 +236,7 @@ kbd{background:#efe6d4;border:1px solid #d9cbb2;border-bottom-width:2px;border-r
     <button class="sndbtn" id="sndTop" title="BGM・効果音のオン/オフ（Mキー）">🔊</button></h1>
   <p class="sub">流れてくるお皿が左に落ちる前にローマ字で打ち切ろう。<br>
   お題は解剖・評価・疾患・治療手技・臨床会話。制限時間内に<b>コース料金より多く食べれば「元が取れた」</b>。<br>
-  レーンは<b>時間とともに加速</b>。ミスタイプか皿の取りこぼしで連続正答は途切れます。</p>
+  皿の流れる速さは<b>どのコースでも・どの長さの言葉でも一定</b>。ミスタイプか皿の取りこぼしで連続正答は途切れます。</p>
 
   <div class="lbl">連続正答ボーナス（1皿ごとに時間加算）</div>
   <div class="combotable">
@@ -537,10 +537,10 @@ const PCOL=['#e2574c','#f2b632','#37b57a','#4a90d9','#9b59b6','#111'];
    3. コース設定
    ========================================================= */
 const COURSES=[
- // kps=1皿に求められる打鍵速度（この速さで打てば間に合う）／grace=反応時間の猶予／ramp=終盤の厳しさ
- {id:'easy', nm:'お手軽', fee:3000, time:60, kps:2.7, grace:0.7, ramp:0.30, de:'60秒 / 短めの単語中心<br>まずはここから'},
- {id:'std',  nm:'お勧め', fee:4500, time:90, kps:3.2, grace:0.6, ramp:0.40, de:'90秒 / 標準<br>専門用語をバランスよく'},
- {id:'hard', nm:'高級',   fee:6000, time:120,kps:3.7, grace:0.5, ramp:0.40, de:'120秒 / 長い用語＆臨床文<br>上級者向け'}
+ // 皿の流れる速さは全コース共通で常に一定。難易度は「制限時間・料金・お題の長さ」で調整する
+ {id:'easy', nm:'お手軽', fee:3000, time:60,  min:0,  max:13, de:'60秒 / 短い用語<br>まずはここから'},
+ {id:'std',  nm:'お勧め', fee:4500, time:90,  min:9,  max:22, de:'90秒 / 専門用語<br>標準的な長さ'},
+ {id:'hard', nm:'高級',   fee:6000, time:120, min:14, max:99, de:'120秒 / 長い用語＆臨床文<br>上級者向け'}
 ];
 let course=COURSES[1];
 let selCats=Object.keys(WORDS).slice();
@@ -580,9 +580,7 @@ function pickPool(){
   pool=pool.map(w=>({...w, rlen:canonFrom(toHira(w.kana),0).length}));
   // コースごとに長さでふるい分け
   const raw=pool;
-  if(course.id==='easy')      pool=pool.filter(w=>w.rlen<=14);
-  else if(course.id==='std')  pool=pool.filter(w=>w.rlen<=26);
-  else                        pool=pool.filter(w=>w.rlen>=11);
+  pool=pool.filter(w=>w.rlen>=course.min && w.rlen<=course.max);
   if(pool.length<8) pool=raw;
   return pool;
 }
@@ -595,12 +593,9 @@ function draw(){                              // 次のお題を1つ引く
   const gold=Math.random()<0.12;              // 金皿＝価格2倍
   return {w,gold,price:priceOf(w.rlen)*(gold?2:1),neta:NETA[Math.floor(Math.random()*NETA.length)]};
 }
-// その皿に与える持ち時間（秒）。コースごとの要求打鍵速度から算出し、時間経過で短くなる
-function limitFor(rlen){
-  const prog=Math.min(1,G.elapsed/course.time);
-  const kps=course.kps*(1+course.ramp*prog);
-  return course.grace + rlen/kps;
-}
+// 皿がレーンを渡りきる時間（秒）＝回転スピード。
+// 文字数にもコースにも一切左右されない固定値（すしだと同じ考え方）
+const PLATE_TIME=7.0;
 function newPlate(){
   const c=G.nextCard || draw();
   G.nextCard=draw();
@@ -613,7 +608,7 @@ function newPlate(){
     <div class="tbar"><i></i></div>
     <div class="wd">${c.w.jp}</div>`;
   BELT.appendChild(el);
-  G.plate={...c, el, t:0, limit:limitFor(c.w.rlen), x:BELT.clientWidth};
+  G.plate={...c, el, t:0, limit:PLATE_TIME, x:BELT.clientWidth};
   el.style.left=G.plate.x+'px';
   $('nextup').innerHTML=`つぎ <b>${G.nextCard.neta}</b> ${esc(G.nextCard.w.jp)}`;
   setTarget();
@@ -867,7 +862,7 @@ function loop(now){
   $('timefill').style.background = r<.2? '#e2574c' : r<.5? 'linear-gradient(90deg,#f2b632,#e2574c)' : 'linear-gradient(90deg,#37b57a,#f2b632)';
 
   // 時間経過とともに1皿あたりの持ち時間が短くなる
-  BGM.setSpeed(1 + course.ramp*Math.min(1,G.elapsed/course.time)*0.55);
+  BGM.setSpeed(G.combo>=20?1.14 : G.combo>=10?1.07 : 1);   // 連続正答が乗るとBGMが少し熱くなる
 
   const p=G.plate;
   if(p){
