@@ -37,15 +37,15 @@ h1 small{font-size:13px;font-weight:400;color:#8a7a6c;letter-spacing:.15em}
 .sub{color:#7d6f63;font-size:13px;margin-top:6px;line-height:1.7}
 
 /* ---------- スタート画面 ---------- */
-.courses{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0 10px}
+.courses{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 10px}
 .course{
-  border:2px solid #e2d6bf;border-radius:14px;padding:14px;cursor:pointer;
+  border:2px solid #e2d6bf;border-radius:14px;padding:12px 8px;cursor:pointer;
   background:#fff;transition:.15s;text-align:center;
 }
 .course:hover{transform:translateY(-3px);border-color:var(--gold);box-shadow:0 8px 20px rgba(0,0,0,.12)}
 .course.sel{border-color:var(--accent);background:#fff5f3;box-shadow:0 0 0 3px rgba(226,87,76,.15)}
 .course .nm{font-weight:700;font-size:16px}
-.course .pr{font-size:26px;font-weight:800;color:var(--accent);margin:4px 0;font-variant-numeric:tabular-nums}
+.course .pr{font-size:22px;font-weight:800;color:var(--accent);margin:4px 0;font-variant-numeric:tabular-nums}
 .course .de{font-size:11.5px;color:#8a7a6c;line-height:1.6}
 .cats{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
 .cat{
@@ -245,7 +245,7 @@ kbd{background:#efe6d4;border:1px solid #d9cbb2;border-bottom-width:2px;border-r
     <div><b>10</b>皿連続<span>+0.8秒</span></div>
     <div><b>15</b>皿連続<span>+1.0秒</span></div>
   </div>
-  <p class="sub" style="margin-top:6px">※ 加算できる時間の上限は制限時間の30%（お手軽18秒／お勧め27秒／高級36秒）</p>
+  <p class="sub" style="margin-top:6px">※ 加算できる時間の上限は制限時間の30%（お手軽18秒／お勧め27秒／高級・特上36秒）</p>
 
   <div class="lbl">コースを選ぶ</div>
   <div class="courses" id="courses"></div>
@@ -537,10 +537,13 @@ const PCOL=['#e2574c','#f2b632','#37b57a','#4a90d9','#9b59b6','#111'];
    3. コース設定
    ========================================================= */
 const COURSES=[
- // 皿の流れる速さは全コース共通で常に一定。難易度は「制限時間・料金・お題の長さ」で調整する
- {id:'easy', nm:'お手軽', fee:3000, time:60,  min:0,  max:13, de:'60秒 / 短い用語<br>まずはここから'},
- {id:'std',  nm:'お勧め', fee:4500, time:90,  min:9,  max:22, de:'90秒 / 専門用語<br>標準的な長さ'},
- {id:'hard', nm:'高級',   fee:6000, time:120, min:14, max:99, de:'120秒 / 長い用語＆臨床文<br>上級者向け'}
+ // 皿の流れる速さは全コース共通で常に一定（PLATE_TIME秒）。
+ // 難易度は「お題の文字数帯・制限時間・料金」で調整する。
+ // 各コース内は文字数をそろえてあるので、どの皿も同じ手応えになる。
+ {id:'easy', nm:'お手軽', fee:2500, time:60,  min:6,  max:13, de:'60秒 ／ 6〜13文字<br>1.5キー/秒で間に合う'},
+ {id:'std',  nm:'お勧め', fee:4000, time:90,  min:14, max:20, de:'90秒 ／ 14〜20文字<br>2.4キー/秒で間に合う'},
+ {id:'hard', nm:'高級',   fee:6000, time:120, min:21, max:29, de:'120秒 ／ 21〜29文字<br>3.6キー/秒で間に合う'},
+ {id:'top',  nm:'特上',   fee:7000, time:120, min:28, max:99, de:'120秒 ／ 臨床会話文<br>4.8キー/秒で間に合う'}
 ];
 let course=COURSES[1];
 let selCats=Object.keys(WORDS).slice();
